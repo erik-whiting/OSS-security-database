@@ -1,0 +1,55 @@
+import psycopg2
+import psycopg2.extras
+import os
+
+class Connection:
+  def __init__(self, db_name):
+    self.con = psycopg2.connect(database=db_name,
+                                user='postgres',
+                                password='postgres',
+                                host=os.getenv('DB_HOST'),
+                                port="5432")
+
+  def close(self):
+    self.close()
+
+class Query:
+  def __init__(self):
+    self.connection = Connection('oss_repositories')
+    self.cursor = self.connection.con.cursor(cursor_factory=psycopg2.extras.DictCursor)
+  
+  def execute(self, sql):
+    self.cursor.execute(sql)
+  
+  def query(self, sql):
+    self.execute(sql)
+    results = []
+    for row in self.cursor.fetchall():
+      results.append(row)
+    return results
+
+  def command(self, sql):
+    cursor = self.connection.con.cursor()
+    cursor.execute(sql)
+    self.connection.con.commit()
+  
+  def insert(self, table, columns, values):
+    column_string = f"({', '.join(columns)})"
+    # Must stringify the numeric values for this join
+    stringy_list = []
+    for value in values:
+      stringy_list.append(str(value))
+    value_string = f"({', '.join(stringy_list)})"
+    query_string = f"INSERT INTO {table} {column_string} VALUES {value_string};"
+    self.command(query_string)
+
+  def bulk_insert(self, table, columns, values_list):
+    column_string = column_string = f"({', '.join(columns)})"
+    values_string = ''
+    last_value = values_list[::-1][0]
+    for values in values_list:
+      values_string += f"({values})"
+      if values != last_value:
+        values_string += ', '
+    query_string = f"INSERT INTO {table} {column_string} VALUES {values_string}"
+    self.command(query_string)
