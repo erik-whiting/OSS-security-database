@@ -48,18 +48,3 @@ class Query:
     value_string = f"({', '.join(stringy_list)})"
     query_string = f"INSERT INTO {table} {column_string} VALUES {value_string};"
     self.command(query_string)
-
-  def bulk_insert(self, table, columns, values_list):
-    column_string = column_string = f"({', '.join(columns)})"
-    values_string = ''
-    last_value = values_list[::-1][0]
-    for values in values_list:
-      values_string += f"({self.postgresql_friendly_value(values)})"
-      if values != last_value:
-        values_string += ', '
-    query_string = f"INSERT INTO {table} {column_string} VALUES {values_string}"
-    self.command(query_string)
-
-  def postgresql_friendly_value(self, value):
-    new_value = value.replace('\'', '\'\'')
-    return new_value

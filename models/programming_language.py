@@ -1,7 +1,4 @@
-from db.database import Query
-from models.entity import Entity
-
-class ProgrammingLanguage(Entity):
+class ProgrammingLanguage:
   """
   This class captures some metadata of a language so
   we can keep track of a repository's specific needs
