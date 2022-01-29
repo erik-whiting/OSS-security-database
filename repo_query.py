@@ -8,7 +8,7 @@ from models.repository import Repository
 class RepoQuery:
   
   def __init__(self, token):
-    self.api = Github(token)
+    self.api = Github('erik-whiting', token)
     self.supported_languages =  [
       'c',
       'c++',
@@ -46,8 +46,9 @@ class RepoQuery:
       count += 1
       print(f"Writing {repo.name} to database ... ")
       repo.write_to_database()
-      print("Sleeping for 1 second (avoiding rate limit)")
-      sleep(1)
+      if count % 5 == 0:
+        print("Sleeping for 1 second to avoid rate limit")
+        sleep(1)
 
   def bulk_save_repos_to_db(self, language, max_repos):
     gh_repositories = self.get_popular_repos_for(language)
@@ -70,9 +71,7 @@ class RepoQuery:
       self.save_to_db(language, max_repos_per_language, bulk)
     
 
-token = ''
-with open('.tmp/gh_token_maybe.txt') as f:
-  token = f.read()
+token = os.getenv('gh_token')
 
 rq = RepoQuery(token)
-rq.build_database(20, False)
+rq.build_database(100, False)

@@ -6,7 +6,7 @@ from models.repository import Repository
 
 class PrototypeQuery:
   def __init__(self):
-    self.api = Github('erik-whiting', os.getenv('GH_PASS'))
+    self.api = Github('erik-whiting', os.getenv('gh_token'))
   
   def get_repo_by_name(self, repo_name='erik-whiting/LuluTest'):
     gh_repo = self.api.get_repo(repo_name, lazy=False)
