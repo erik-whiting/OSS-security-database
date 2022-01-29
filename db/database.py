@@ -28,6 +28,12 @@ class Query:
       results.append(row)
     return results
 
+  def get(self, table, column, value):
+    if type(value) == str:
+      value = f"'{value}'"
+    query_string = f'SELECT * FROM  {table} WHERE {column} = {value}'
+    return self.query(query_string)
+
   def command(self, sql):
     cursor = self.connection.con.cursor()
     cursor.execute(sql)
@@ -48,8 +54,12 @@ class Query:
     values_string = ''
     last_value = values_list[::-1][0]
     for values in values_list:
-      values_string += f"({values})"
+      values_string += f"({self.postgresql_friendly_value(values)})"
       if values != last_value:
         values_string += ', '
     query_string = f"INSERT INTO {table} {column_string} VALUES {values_string}"
     self.command(query_string)
+
+  def postgresql_friendly_value(self, value):
+    new_value = value.replace('\'', '\'\'')
+    return new_value

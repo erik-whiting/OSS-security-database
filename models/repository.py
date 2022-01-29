@@ -15,6 +15,8 @@ class Repository:
     # We explicitly write the ID because we're using its GitHub ID
     self.id = repo_object.id
     self.name = repo_object.name
+    self.description = repo_object.description
+    self.latest_recorded_commit = repo_object.get_commits()[0].sha
     self.html_url = repo_object.html_url
     self.clone_url = repo_object.clone_url
     self.ssh_url = repo_object.ssh_url
@@ -23,13 +25,17 @@ class Repository:
     self.stars = repo_object.stargazers_count
     self.forks = repo_object.forks_count
     self.watchers = repo_object.watchers_count
+    self.issues = repo_object.open_issues_count
     self.programming_language = programming_language
+    self.created = repo_object.created_at
   
   @staticmethod
   def column_list():
     return [
       'id',
       'name',
+      'description',
+      'latest_recorded_commit',
       'html_url',
       'clone_url',
       'ssh_url',
@@ -38,13 +44,17 @@ class Repository:
       'stars',
       'forks',
       'watchers',
-      'programming_language'
+      'issues',
+      'programming_language',
+      'created'
     ]
 
   def values_list(self):
     return [
       self.id,
       self.name,
+      self.description,
+      self.latest_recorded_commit,
       self.html_url,
       self.clone_url,
       self.ssh_url,
@@ -53,7 +63,9 @@ class Repository:
       self.stars,
       self.forks,
       self.watchers,
-      self.programming_language
+      self.issues,
+      self.programming_language,
+      self.created
     ]
   
   def values_dict(self):
@@ -67,23 +79,37 @@ class Repository:
   def sql_friendly_insert_values(self):
     db_string_columns = [
       'name',
+      'description',
+      'latest_recorded_commit',
       'html_url',
       'clone_url',
       'ssh_url',
       'git_url',
       'topics',
-      'programming_language'
+      'stars',
+      'forks',
+      'watchers',
+      'issues',
+      'programming_language',
+      'created'
     ]
 
     retvals = []
     for column in self.values_dict().keys():
       if column in db_string_columns:
-        sql_insert_value = f"'{self.values_dict()[column]}'"
-        retvals.append(sql_insert_value)    
+        insert_value = self.values_dict()[column]
+        psql_insert_value = self.postgres_friendly_insert_values(insert_value)
+        sql_insert_value = f"'{psql_insert_value}'"
+        retvals.append(sql_insert_value)
       else:
         retvals.append(str(self.values_dict()[column]))
     return retvals
 
+  def postgres_friendly_insert_values(self, value):
+    if type(value) == str:
+      return value.replace('\'', '\'\'')
+    else:
+      return value
   
   def sql_friendly_values(self):
     return ', '.join(self.sql_friendly_insert_values())
@@ -96,5 +122,9 @@ class Repository:
     classes. This is kind of a "just-in-case" method.
     """
     q = Query()
-    q.insert('repositories', self.column_list(), self.sql_friendly_insert_values())
+    # Check if we already inserted this
+    already_exists = len(q.get('repositories', 'id', self.values_dict()['id'])) > 0
+    if not already_exists:
+      q.insert('repositories', self.column_list(), self.sql_friendly_insert_values())
+
     
