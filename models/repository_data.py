@@ -1,6 +1,6 @@
 from db.database import Query
 
-class Repository:
+class RepositoryData:
   """
   This is a class for instantiating objects representing
   repositories that were returned from the API query
@@ -8,8 +8,6 @@ class Repository:
   we don't need, so this class encapsualtes the important
   data points.
   """
-
-  TABLE_NAME='repositories'
 
   def __init__(self, repo_object, programming_language):
     # We explicitly write the ID because we're using its GitHub ID
@@ -117,14 +115,20 @@ class Repository:
   def write_to_database(self):
     """
     This method writes the repository's data to the
-    database, but preferably we'd use the Query class's
-    bulk_insert method after building a list of these
-    classes. This is kind of a "just-in-case" method.
+    database. Unfortunately, we're doing this one
+    repository at a time to ensure data integrity
+    and to act accordingly if for some reason the
+    write fails.
     """
     q = Query()
     # Check if we already inserted this
     already_exists = len(q.get('repositories', 'id', self.values_dict()['id'])) > 0
-    if not already_exists:
-      q.insert('repositories', self.column_list(), self.sql_friendly_insert_values())
-
-    
+    if already_exists:
+      print('This repository has already been inserted')
+      return False
+    else:
+      try:
+        q.insert('repositories', self.column_list(), self.sql_friendly_insert_values())
+      except:
+        return False
+      return True
