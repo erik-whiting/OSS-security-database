@@ -125,10 +125,13 @@ class RepositoryData:
     already_exists = len(q.get('repositories', 'id', self.values_dict()['id'])) > 0
     if already_exists:
       print('This repository has already been inserted')
-      return False
+      raise RepoAlreadyExists
     else:
       try:
         q.insert('repositories', self.column_list(), self.sql_friendly_insert_values())
-      except:
-        return False
+      except Exception as ex:
+        raise ex
       return True
+
+class RepoAlreadyExists(Exception):
+  pass
