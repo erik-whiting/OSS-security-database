@@ -2,7 +2,7 @@ from time import sleep, time
 import os
 
 from github import Github
-from models.repository_data import RepositoryData
+from models.repository_data import RepoAlreadyExists, RepositoryData
 
 gh_user = 'erik-whiting'
 gh_token = os.getenv('gh_token')
@@ -30,6 +30,11 @@ def write_repo_to_db(api, language, max_repos):
   when_to_pause = 20
   pause_duration = 2
 
+  # Create new error log
+  f = open('error_log.csv', 'w')
+  f.write('error_typ,repo_name,repo_id,time\n')
+  f.close()
+
   repo_objects = get_repo_objects(api, language)
   for repo_object in repo_objects:
     if count >= max_repos:
@@ -50,6 +55,9 @@ def write_repo_to_db(api, language, max_repos):
       print(f'{int(seconds_until_reset / 60)} minutes and {int(seconds_until_reset % 60)} seconds')
       print('\n')
       sleep(5 * 60) # wait five minutes to reset rate limit
+      if get_remaining_api_calls(api) > 100:
+        break
+
     calls_since_last_pause += 1 # Because we've made one API request
     if calls_since_last_pause >= when_to_pause:
       calls_since_last_pause = 0
@@ -58,11 +66,24 @@ def write_repo_to_db(api, language, max_repos):
       sleep(pause_duration)
 
     print(f'Writing {repo.name} to databse (number {count + 1} for {language})')
-    if repo.write_to_database():
+    try:
+      success = repo.write_to_database()
+    except RepoAlreadyExists:
+      log_error('already_exists', repo.name, repo.id)
+    except Exception as ex:
+      log_error(type(ex), repo.name, repo.id)
+    
+    if success:
       print(f'Successfully wrote {repo.name} to database')
       count += 1
     else:
-      print(f'Failed to write {repo.name}, continuing ... ')
+      print(f'Failed to write {repo.name}, writing error message ... ')
+
+def log_error(error_type, repo_name, repo_id):
+  error_message = f'{error_type},{repo_name},{repo_id},{time()}\n'
+  f = open('error_log.csv', 'a')
+  f.write(error_message)
+  f.close()
     
 def get_remaining_api_calls(api):
   return api.rate_limiting[0]
