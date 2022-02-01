@@ -28,7 +28,8 @@ class Query:
       results.append(row)
     return results
 
-  def get(self, table, column, value):
+  def get(self, table, column, value, columns=[]):
+    select_columns = '*' if len(columns) == 0 else ', '.join(columns)
     if type(value) == str:
       value = f"'{value}'"
     query_string = f'SELECT * FROM  {table} WHERE {column} = {value}'
