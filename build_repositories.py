@@ -1,4 +1,5 @@
 from time import sleep, time
+from datetime import datetime
 import os
 
 from github import Github
@@ -45,18 +46,8 @@ def write_repo_to_db(api, language, max_repos):
       # included it for further analysis.
       continue
     repo = RepositoryData(repo_object, language)
-    while get_remaining_api_calls(api) <= 100:
-      calls_left = get_remaining_api_calls(api)
-      seconds_until_reset = int(api.rate_limiting_resettime - time())
-      print('Remaining API calls low, sleeping for five minutes ...')
-      print(f'Reamining calls: {calls_left}')
-      print('\n')
-      print(f'Reset in')
-      print(f'{int(seconds_until_reset / 60)} minutes and {int(seconds_until_reset % 60)} seconds')
-      print('\n')
-      sleep(5 * 60) # wait five minutes to reset rate limit
-      if get_remaining_api_calls(api) > 100:
-        break
+    if get_remaining_api_calls(api) <= 100:
+      sleep_until_rate_limit_resets(api)
 
     calls_since_last_pause += 1 # Because we've made one API request
     if calls_since_last_pause >= when_to_pause:
@@ -78,6 +69,20 @@ def write_repo_to_db(api, language, max_repos):
       count += 1
     else:
       print(f'Failed to write {repo.name}, writing error message ... ')
+
+def sleep_until_rate_limit_resets(api):
+  seconds_until_reset = int(api.rate_limiting_resettime - time())
+  seconds_until_reset += 30 # just to be safe
+  now = time()
+  formatted_now = datetime.utcfromtimestamp(now).strftime('%H:%M:%S on %Y-%m-%d')
+  reset_time = now + seconds_until_reset
+  formatted_reset_time = datetime.utcfromtimestamp(reset_time).strftime('%H:%M:%S on %Y-%m-%d')
+  print('\n')
+  print(f'This message was printed at {formatted_now}')
+  print(f'Sleeping for approximately {int(seconds_until_reset / 60) + 1} minutes to avoid rate limiting')
+  print(f'Scheduled to start again at {formatted_reset_time}')
+  print('\n')
+  sleep(seconds_until_reset)
 
 def log_error(error_type, repo_name, repo_id):
   error_message = f'{error_type},{repo_name},{repo_id},{time()}\n'
