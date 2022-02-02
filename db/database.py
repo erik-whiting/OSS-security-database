@@ -28,11 +28,14 @@ class Query:
       results.append(row)
     return results
 
-  def get(self, table, column, value, columns=[]):
+  def get(self, table, column, value=None, columns=[]):
     select_columns = '*' if len(columns) == 0 else ', '.join(columns)
     if type(value) == str:
       value = f"'{value}'"
-    query_string = f'SELECT * FROM  {table} WHERE {column} = {value}'
+    if value:
+      query_string = f'SELECT {select_columns} FROM  {table} WHERE {column} = {value}'
+    else:
+      query_string = f'SELECT {select_columns} FROM {table}'
     return self.query(query_string)
 
   def command(self, sql):
@@ -48,4 +51,11 @@ class Query:
       stringy_list.append(str(value))
     value_string = f"({', '.join(stringy_list)})"
     query_string = f"INSERT INTO {table} {column_string} VALUES {value_string};"
+    self.command(query_string)
+
+  def update(self, table, column, new_value, where, matcher):
+    # UPDATE table SET column = new_value WHERE where = matcher
+    if type(new_value) == str:
+      new_value = f"{new_value}"
+    query_string = f'UPDATE {table} SET {column} = {new_value} WHERE {where} = {matcher}'
     self.command(query_string)
