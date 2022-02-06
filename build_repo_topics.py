@@ -1,6 +1,3 @@
-import re
-from collections.abc import Iterable
-
 from db.database import Query
 
 q = Query()
