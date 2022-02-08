@@ -93,18 +93,14 @@ def log_error(error_type, repo_name, repo_id):
 def get_remaining_api_calls(api):
   return api.rate_limiting[0]
 
-supported_languages = [
-  'c',
-  'c++',
-  'c#',
-  'go',
-  'java',
+languages_to_query = [
+  'ruby',
   'javascript',
-  'python',
-  'typescript'
-] # skipping ruby because it's experimental
+  'typescript',
+  'python'
+]
 
 api = Github(gh_user, gh_token)
 repos_per_language = 1000
-for language in supported_languages:
+for language in languages_to_query:
   write_repo_to_db(api, language, repos_per_language)
