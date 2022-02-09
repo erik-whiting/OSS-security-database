@@ -38,6 +38,10 @@ class Query:
       query_string = f'SELECT {select_columns} FROM {table}'
     return self.query(query_string)
 
+  def get_like(self, table, column=None, search_string=None):
+    query_string = f'SELECT * FROM {table} WHERE LOWER({column}) LIKE LOWER(\'%{search_string}%\')'
+    return self.query(query_string)
+
   def command(self, sql):
     cursor = self.connection.con.cursor()
     cursor.execute(sql)

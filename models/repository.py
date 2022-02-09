@@ -1,5 +1,7 @@
 from subprocess import Popen, PIPE
-import os
+import os, csv
+
+from models.repo_vulnerability import RepoVulnerability
 
 class Repository:
   def __init__(self, data):
@@ -45,6 +47,10 @@ class Repository:
     # have now. The repository may have been
     # updated between putting its information
     # in the database and cloning it.
+    local_commit = self.get_latest_commit()
+    return local_commit == self.latest_recorded_commit
+  
+  def get_latest_commit(self):
     command = Popen(
       [
         'git', 
@@ -56,9 +62,8 @@ class Repository:
       stdout=PIPE # This is so we can get the return value
     )
     byte_hash = command.communicate()[0]
-    local_commit = byte_hash.decode('utf-8')
-    return local_commit == self.latest_recorded_commit
-  
+    return byte_hash.decode('utf-8').strip()
+
   def cql_extractor(self):
     if self.language == 'typescript':
       # The TS extractor is called 'javascript'
@@ -125,3 +130,18 @@ class Repository:
       stdout=PIPE
     )
     return command.communicate()
+
+  def get_vulnerabilities(self):
+    analysis_location = f'./analysis_results/{self.id}/{self.name}/analysis.csv'
+    retval = []
+    with open(analysis_location, 'r', newline='') as csvfile:
+      reader = csv.reader(csvfile, delimiter=',')
+      for row in reader:
+        retval.append(row[0])
+    return retval
+
+  def insert_vulnerabilities(self):
+    vulnerabilities = self.get_vulnerabilities()
+    for v in vulnerabilities:
+      rv = RepoVulnerability(self, v)
+      rv.insert()
