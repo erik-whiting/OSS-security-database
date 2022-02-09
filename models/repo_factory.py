@@ -14,7 +14,7 @@ class RepoFactory:
   ]
 
   @staticmethod
-  def create(column, value):
+  def find_by(column, value):
     data = RepoFactory.select_where(column, value)
     return Repository(data)
 

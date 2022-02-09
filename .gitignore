@@ -4,4 +4,7 @@ env
 .tmp
 error_log.csv
 
-./cloned_repositories
+cloned_repositories
+code_ql_databases
+analysis_results
+prototype_*
