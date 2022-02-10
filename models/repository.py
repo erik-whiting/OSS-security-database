@@ -1,5 +1,5 @@
 from subprocess import Popen, PIPE
-import os, csv
+import os, csv, shutil, errno, stat
 
 from models.repo_vulnerability import RepoVulnerability
 
@@ -41,6 +41,20 @@ class Repository:
       print(f'./cloned_repositories/{self.id}/{self.name} exists, moving on')
     os.system(self.git_clone_string(from_url))
   
+  def cleanup(self):
+    # Since the system is going to evaluate
+    # thousands of repositories, it's a good
+    # idea to delete files when we're done
+    # with them. Space is cheap but finite.
+
+    repo_path = f'./cloned_repositories/{self.id}/{self.name}'
+    code_ql_path = f'./code_ql_databases/{self.id}/{self.name}'
+    analysis_path = f'./analysis_results/{self.id}/{self.name}'
+
+    for path in [repo_path, code_ql_path, analysis_path]:
+      full_path = os.path.abspath(path)
+      shutil.rmtree(full_path, ignore_errors=False, onerror=self.remove_read_only)
+
   def verify_latest(self):
     # Check to see if the latest commit we have
     # in the database is the latest commit we
@@ -145,3 +159,14 @@ class Repository:
     for v in vulnerabilities:
       rv = RepoVulnerability(self, v)
       rv.insert()
+
+  def remove_read_only(self, func, path, exc):
+    # This method is for when shutil's rmtree
+    # fails because permission is denied. This
+    # script was taken from https://stackoverflow.com/a/1214935/11903505
+    excvalue = exc[1]
+    if func in (os.rmdir, os.remove, os.unlink) and excvalue.errno == errno.EACCES:
+        os.chmod(path, stat.S_IRWXU| stat.S_IRWXG| stat.S_IRWXO) # 0777
+        func(path)
+    else:
+        raise
