@@ -17,10 +17,10 @@ class Query:
   def __init__(self):
     self.connection = Connection('oss_repositories')
     self.cursor = self.connection.con.cursor(cursor_factory=psycopg2.extras.DictCursor)
-  
+
   def execute(self, sql):
     self.cursor.execute(sql)
-  
+
   def query(self, sql):
     self.execute(sql)
     results = []
@@ -46,7 +46,7 @@ class Query:
     cursor = self.connection.con.cursor()
     cursor.execute(sql)
     self.connection.con.commit()
-  
+
   def insert(self, table, columns, values):
     column_string = f"({', '.join(columns)})"
     # Must stringify the numeric values for this join
