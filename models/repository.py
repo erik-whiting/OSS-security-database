@@ -1,6 +1,7 @@
 from subprocess import Popen, PIPE
-import os, csv, shutil, errno, stat
+import os, shutil, errno, stat
 
+from db.database import Query
 from models.repo_vulnerability import RepoVulnerability
 
 class Repository:
@@ -14,7 +15,8 @@ class Repository:
     self.git_url = data['git_url']
     self.topics = data['topics']
     self.language = data['programming_language']
-  
+    self.ram_setting = 1000 * 12
+
   def git_clone_string(self, from_url=None):
     url = self.clone_url
     if from_url == 'ssh':
@@ -26,32 +28,28 @@ class Repository:
 
   def clone(self, from_url=None):
     try:
-      os.mkdir('./cloned_repositories')
-    except FileExistsError:
-      print('cloned_repositories exists, moving on')
-    
-    try:
       os.mkdir(f'./cloned_repositories/{self.id}')
     except FileExistsError:
       print(f'./cloned_repositories/{self.id} exists, moving on')
-    
+
     try:
       os.mkdir(f'./cloned_repositories/{self.id}/{self.name}')
     except FileExistsError:
       print(f'./cloned_repositories/{self.id}/{self.name} exists, moving on')
     os.system(self.git_clone_string(from_url))
-  
+
   def cleanup(self):
     # Since the system is going to evaluate
     # thousands of repositories, it's a good
     # idea to delete files when we're done
     # with them. Space is cheap but finite.
 
-    repo_path = f'./cloned_repositories/{self.id}/{self.name}'
-    code_ql_path = f'./code_ql_databases/{self.id}/{self.name}'
-    analysis_path = f'./analysis_results/{self.id}/{self.name}'
-
-    for path in [repo_path, code_ql_path, analysis_path]:
+    paths = [
+      self.source_root(),
+      self.cql_database_path(),
+      f'./analysis_results/{self.id}/{self.name}'
+    ]
+    for path in paths:
       full_path = os.path.abspath(path)
       shutil.rmtree(full_path, ignore_errors=False, onerror=self.remove_read_only)
 
@@ -63,14 +61,14 @@ class Repository:
     # in the database and cloning it.
     local_commit = self.get_latest_commit()
     return local_commit == self.latest_recorded_commit
-  
+
   def get_latest_commit(self):
     command = Popen(
       [
-        'git', 
-        '-C', 
-        f'./cloned_repositories/{self.id}/{self.name}', 
-        'rev-parse', 
+        'git',
+        '-C',
+        self.source_root(),
+        'rev-parse',
         'HEAD'
       ],
       stdout=PIPE # This is so we can get the return value
@@ -87,23 +85,19 @@ class Repository:
 
   def source_root(self):
     return f'./cloned_repositories/{self.id}/{self.name}'
-  
+
   def cql_database_path(self):
     return f'./code_ql_databases/{self.id}/{self.name}'
-  
+
   def db_analysis_path(self):
     return f'./analysis_results/{self.id}/{self.name}/analysis.csv'
-  
+
   def build_cql_database(self):
-    try:
-      os.mkdir(f'./code_ql_databases/')
-    except FileExistsError:
-      print('code_ql_databases already exists, moving on')
     try:
       os.mkdir(f'./code_ql_databases/{self.id}')
     except FileExistsError:
       print(f'./code_ql_databases/{self.id} already exists, moving on')
-    
+
     command = Popen(
       [
         'codeql',
@@ -111,17 +105,15 @@ class Repository:
         'create',
         self.cql_database_path(),
         f'--source-root={self.source_root()}',
-        f'--language={self.cql_extractor()}'
+        f'--language={self.cql_extractor()}',
+        '--threads=0',
+        f'--ram={self.ram_setting}'
       ],
       stdout=PIPE
     )
     return command.communicate()
-  
+
   def analyze_cql_database(self):
-    try:
-      os.mkdir(f'./analysis_results/')
-    except FileExistsError:
-      print('analysis_results already exists, moving on')
     try:
       os.mkdir(f'./analysis_results/{self.id}')
     except FileExistsError:
@@ -130,7 +122,7 @@ class Repository:
       os.mkdir(f'./analysis_results/{self.id}/{self.name}')
     except FileExistsError:
       print(f'./analysis_results/{self.id}/{self.name} already exists, moving on')
-    
+
     command = Popen(
       [
         'codeql',
@@ -139,7 +131,8 @@ class Repository:
         self.cql_database_path(),
         '--format=csv',
         f'--output={self.db_analysis_path()}',
-        '--threads=0'
+        '--threads=0',
+        f'--ram={self.ram_setting}'
       ],
       stdout=PIPE
     )
@@ -148,17 +141,30 @@ class Repository:
   def get_vulnerabilities(self):
     analysis_location = f'./analysis_results/{self.id}/{self.name}/analysis.csv'
     retval = []
-    with open(analysis_location, 'r', newline='') as csvfile:
-      reader = csv.reader(csvfile, delimiter=',')
-      for row in reader:
-        retval.append(row[0])
+    try:
+      file = open(analysis_location)
+      for line in file.readlines():
+        vulnerability_name = line.split(',')[0].strip()
+        retval.append(vulnerability_name)
+    except Exception as e:
+      print(f'Error occured getting vulnerabilities for {self.name}')
+      print(f'Error message: f{e}')
+      return False
     return retval
 
-  def insert_vulnerabilities(self):
+  def insert_vulnerabilities(self, analysis_id):
     vulnerabilities = self.get_vulnerabilities()
-    for v in vulnerabilities:
-      rv = RepoVulnerability(self, v)
-      rv.insert()
+    if vulnerabilities:
+      for v in vulnerabilities:
+        rv = RepoVulnerability(self, v)
+        rv.insert(analysis_id)
+    else:
+      return False
+
+  def mark_analysis_completed(self, analysis_id):
+    q = Query()
+    sql = f'UPDATE analysis_repo SET completed = true WHERE repository_id = {self.id} AND analysis_id = {analysis_id}'
+    q.command(sql)
 
   def remove_read_only(self, func, path, exc):
     # This method is for when shutil's rmtree

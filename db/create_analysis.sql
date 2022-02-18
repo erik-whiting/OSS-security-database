@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS public.analyses
+(
+  id SERIAL PRIMARY KEY,
+  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  repo_extraction_sql CHARACTER VARYING(1000),
+  completed BOOLEAN DEFAULT false
+)
+WITH (
+  OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.analyses OWNER TO postgres
