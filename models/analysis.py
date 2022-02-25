@@ -5,7 +5,7 @@ from db.database import Query
 from models.repo_factory import RepoFactory
 
 class Analysis:
-  def __init__(self, languages=[], topics=[]):
+  def __init__(self, languages=[]):
     self.id = None
     self.repo_ids = []
     self.prepared = False
@@ -93,11 +93,6 @@ class Analysis:
     sql_friendly_langauges = "', '".join(self.clauses['languages'])
     sql_friendly_langauges = f"('{sql_friendly_langauges}')"
     return f'WHERE programming_language IN {sql_friendly_langauges}'
-
-  def topic_clause(self):
-    sql_friendly_topics = '%|%'.join(self.clauses['topics'])
-    sql_friendly_topics = f"'%{sql_friendly_topics}%'"
-    return f'WHERE lower(topics) SIMILAR TO lower({sql_friendly_topics})'
 
   def analyze_repositories(self):
     if not self.prepared:
