@@ -57,15 +57,6 @@ class Repository:
       full_path = os.path.abspath(path)
       shutil.rmtree(full_path, ignore_errors=False, onerror=self.remove_read_only)
 
-  def verify_latest(self):
-    # Check to see if the latest commit we have
-    # in the database is the latest commit we
-    # have now. The repository may have been
-    # updated between putting its information
-    # in the database and cloning it.
-    local_commit = self.get_latest_commit()
-    return local_commit == self.latest_recorded_commit
-
   def get_latest_commit(self):
     command = Popen(
       [
@@ -163,7 +154,10 @@ class Repository:
 
   def mark_analysis_completed(self, analysis_id):
     q = Query()
-    sql = f'UPDATE analysis_repo SET completed = true WHERE repository_id = {self.id} AND analysis_id = {analysis_id}'
+    update_completed = "completed = true"
+    update_repo_head = f"repo_head = '{self.get_latest_commit()}'"
+    where = f'repository_id = {self.id} AND analysis_id = {analysis_id}'
+    sql = f'UPDATE analysis_repo SET {update_completed}, {update_repo_head} WHERE {where}'
     q.command(sql)
 
   def remove_read_only(self, func, path, exc):
