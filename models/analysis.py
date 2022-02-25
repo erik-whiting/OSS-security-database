@@ -100,10 +100,11 @@ class Analysis:
     print(f'{self.timestamp()} Inserting {repo.name} vulnerabilities into database ...\n')
     if repo.insert_vulnerabilities(self.id):
       print('Insert successful')
-    else:
-      print(f'{self.timestamp()} Removing {repo.name} files ...\n')
       repo.mark_analysis_completed(self.id)
-      repo.cleanup()
+    else:
+      print(f'Insertion of {repo.name} vulnerabilities failed\n')
+    print(f'{self.timestamp()} Removing {repo.name} files ...\n')
+    repo.cleanup()
 
   def restart_analysis(self):
     q = Query()

@@ -26,16 +26,20 @@ class Repository:
     string = f'git clone {url} ./cloned_repositories/{self.id}/{self.name}'
     return string
 
-  def clone(self, from_url=None):
-    try:
-      os.mkdir(f'./cloned_repositories/{self.id}')
-    except FileExistsError:
-      print(f'./cloned_repositories/{self.id} exists, moving on')
+  def mkdir(self, dir):
+    if not os.path.isdir(dir):
+      os.mkdir(dir)
 
-    try:
-      os.mkdir(f'./cloned_repositories/{self.id}/{self.name}')
-    except FileExistsError:
-      print(f'./cloned_repositories/{self.id}/{self.name} exists, moving on')
+  def directory_path_for(self, base):
+    return [
+      f'./{base}',
+      f'./{base}/{self.id}',
+      f'./{base}/{self.id}/{self.name}'
+    ]
+
+  def clone(self, from_url=None):
+    for dir in self.directory_path_for('cloned_repositories'):
+      self.mkdir(dir)
     os.system(self.git_clone_string(from_url))
 
   def cleanup(self):
@@ -93,10 +97,8 @@ class Repository:
     return f'./analysis_results/{self.id}/{self.name}/analysis.csv'
 
   def build_cql_database(self):
-    try:
-      os.mkdir(f'./code_ql_databases/{self.id}')
-    except FileExistsError:
-      print(f'./code_ql_databases/{self.id} already exists, moving on')
+    self.mkdir('code_ql_databases')
+    self.mkdir(f'./code_ql_databases/{self.id}')
 
     command = Popen(
       [
@@ -114,14 +116,8 @@ class Repository:
     return command.communicate()
 
   def analyze_cql_database(self):
-    try:
-      os.mkdir(f'./analysis_results/{self.id}')
-    except FileExistsError:
-      print(f'./analysis_results/{self.id} already exists, moving on')
-    try:
-      os.mkdir(f'./analysis_results/{self.id}/{self.name}')
-    except FileExistsError:
-      print(f'./analysis_results/{self.id}/{self.name} already exists, moving on')
+    for dir in self.directory_path_for('analysis_results'):
+      self.mkdir(dir)
 
     command = Popen(
       [
@@ -154,10 +150,14 @@ class Repository:
 
   def insert_vulnerabilities(self, analysis_id):
     vulnerabilities = self.get_vulnerabilities()
-    if vulnerabilities:
+    if vulnerabilities == []:
+      print('No vulnerabilities found')
+      return True
+    elif vulnerabilities:
       for v in vulnerabilities:
         rv = RepoVulnerability(self, v)
         rv.insert(analysis_id)
+        return True
     else:
       return False
 
