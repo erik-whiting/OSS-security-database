@@ -10,9 +10,9 @@ class Analysis:
     self.repo_ids = []
     self.prepared = False
     self.clauses = {
-      'languages': languages if type(languages) == list else [languages],
-      'topics': topics if type(topics) == list else [topics]
-    }
+      'languages': languages if type(languages) == list else [languages]
+    } # Should I add a topics clause?
+    self.completed = False
     self.build_query()
 
   def prepare(self):
@@ -87,10 +87,6 @@ class Analysis:
     sql = 'SELECT id FROM repositories'
     if self.clauses['languages']:
       sql += f' {self.language_clause()}'
-      if self.clauses['topics']:
-        sql += ' AND'
-    if self.clauses['topics']:
-      sql += f' {self.topic_clause()}'
     self.query = sql
 
   def language_clause(self):

@@ -32,7 +32,7 @@ class RepoFactory:
     elif len(repo_rows) > 1:
       raise MultipleReposFound
     else:
-      repo_rows = repo_rows[0] # because Query.get retunrs a list of lists
+      repo_rows = repo_rows[0] # because Query.get returns a list of lists
     values_dict = {
       'id': repo_rows[0],
       'name': repo_rows[1],
@@ -45,13 +45,13 @@ class RepoFactory:
     }
     values_dict['topics'] = RepoFactory.get_topics_by_id(values_dict['id'])
     return values_dict
-  
+
   @staticmethod
   def get_topics_by_id(id):
     q = Query()
     topics = q.get(
-      'repo_topics', 
-      column='repository_id', 
+      'repo_topics',
+      column='repository_id',
       value=id,
       columns=['topic']
     )
