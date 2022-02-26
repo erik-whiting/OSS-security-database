@@ -12,8 +12,19 @@ class Analysis:
     self.clauses = {
       'languages': languages if type(languages) == list else [languages]
     } # Should I add a topics clause?
+    self.codeql_repo = self.get_codeql_repo_hash()
+    self.codeql_version = self.get_codeql_version()
     self.completed = False
     self.build_query()
+
+  def __eq__(self, analysis):
+    if type(analysis) != type(self):
+      return False
+    repo_ids = analysis.repo_ids == self.repo_ids
+    clauses = analysis.clauses == self.clauses
+    git = analysis.codeql_repo == self.codeql_repo
+    version = analysis.codeql_version == self.codeql_version
+    return repo_ids and clauses and git and version
 
   def prepare(self):
     q = Query()

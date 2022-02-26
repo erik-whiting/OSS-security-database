@@ -9,3 +9,5 @@ cloned_repositories
 code_ql_databases
 analysis_results
 prototype_*
+
+*.pkl
