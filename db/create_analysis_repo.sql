@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS public.analysis_repo
   id SERIAL PRIMARY KEY,
   analysis_id BIGINT NOT NULL,
   repository_id BIGINT NOT NULL,
+  repo_head character varying(40),
   completed BOOLEAN DEFAULT false,
   CONSTRAINT fk_analysis_repo FOREIGN KEY (analysis_id) REFERENCES analyses(id),
   CONSTRAINT fk_repo_analysis FOREIGN KEY (repository_id) REFERENCES repositories(id)

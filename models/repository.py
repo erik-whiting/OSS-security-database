@@ -26,16 +26,20 @@ class Repository:
     string = f'git clone {url} ./cloned_repositories/{self.id}/{self.name}'
     return string
 
-  def clone(self, from_url=None):
-    try:
-      os.mkdir(f'./cloned_repositories/{self.id}')
-    except FileExistsError:
-      print(f'./cloned_repositories/{self.id} exists, moving on')
+  def mkdir(self, dir):
+    if not os.path.isdir(dir):
+      os.mkdir(dir)
 
-    try:
-      os.mkdir(f'./cloned_repositories/{self.id}/{self.name}')
-    except FileExistsError:
-      print(f'./cloned_repositories/{self.id}/{self.name} exists, moving on')
+  def directory_path_for(self, base):
+    return [
+      f'./{base}',
+      f'./{base}/{self.id}',
+      f'./{base}/{self.id}/{self.name}'
+    ]
+
+  def clone(self, from_url=None):
+    for dir in self.directory_path_for('cloned_repositories'):
+      self.mkdir(dir)
     os.system(self.git_clone_string(from_url))
 
   def cleanup(self):
@@ -52,15 +56,6 @@ class Repository:
     for path in paths:
       full_path = os.path.abspath(path)
       shutil.rmtree(full_path, ignore_errors=False, onerror=self.remove_read_only)
-
-  def verify_latest(self):
-    # Check to see if the latest commit we have
-    # in the database is the latest commit we
-    # have now. The repository may have been
-    # updated between putting its information
-    # in the database and cloning it.
-    local_commit = self.get_latest_commit()
-    return local_commit == self.latest_recorded_commit
 
   def get_latest_commit(self):
     command = Popen(
@@ -93,10 +88,8 @@ class Repository:
     return f'./analysis_results/{self.id}/{self.name}/analysis.csv'
 
   def build_cql_database(self):
-    try:
-      os.mkdir(f'./code_ql_databases/{self.id}')
-    except FileExistsError:
-      print(f'./code_ql_databases/{self.id} already exists, moving on')
+    self.mkdir('code_ql_databases')
+    self.mkdir(f'./code_ql_databases/{self.id}')
 
     command = Popen(
       [
@@ -114,14 +107,8 @@ class Repository:
     return command.communicate()
 
   def analyze_cql_database(self):
-    try:
-      os.mkdir(f'./analysis_results/{self.id}')
-    except FileExistsError:
-      print(f'./analysis_results/{self.id} already exists, moving on')
-    try:
-      os.mkdir(f'./analysis_results/{self.id}/{self.name}')
-    except FileExistsError:
-      print(f'./analysis_results/{self.id}/{self.name} already exists, moving on')
+    for dir in self.directory_path_for('analysis_results'):
+      self.mkdir(dir)
 
     command = Popen(
       [
@@ -154,16 +141,23 @@ class Repository:
 
   def insert_vulnerabilities(self, analysis_id):
     vulnerabilities = self.get_vulnerabilities()
-    if vulnerabilities:
+    if vulnerabilities == []:
+      print('No vulnerabilities found')
+      return True
+    elif vulnerabilities:
       for v in vulnerabilities:
         rv = RepoVulnerability(self, v)
         rv.insert(analysis_id)
+        return True
     else:
       return False
 
   def mark_analysis_completed(self, analysis_id):
     q = Query()
-    sql = f'UPDATE analysis_repo SET completed = true WHERE repository_id = {self.id} AND analysis_id = {analysis_id}'
+    update_completed = "completed = true"
+    update_repo_head = f"repo_head = '{self.get_latest_commit()}'"
+    where = f'repository_id = {self.id} AND analysis_id = {analysis_id}'
+    sql = f'UPDATE analysis_repo SET {update_completed}, {update_repo_head} WHERE {where}'
     q.command(sql)
 
   def remove_read_only(self, func, path, exc):

@@ -1,18 +1,30 @@
-import datetime, os
+from subprocess import Popen, PIPE
+import datetime, os, shutil
 
 from db.database import Query
 from models.repo_factory import RepoFactory
 
 class Analysis:
-  def __init__(self, languages=[], topics=[]):
+  def __init__(self, languages=[]):
     self.id = None
     self.repo_ids = []
     self.prepared = False
     self.clauses = {
-      'languages': languages if type(languages) == list else [languages],
-      'topics': topics if type(topics) == list else [topics]
-    }
+      'languages': languages if type(languages) == list else [languages]
+    } # Should I add a topics clause?
+    self.codeql_repo = self.get_codeql_repo_hash()
+    self.codeql_version = self.get_codeql_version()
+    self.completed = False
     self.build_query()
+
+  def __eq__(self, analysis):
+    if type(analysis) != type(self):
+      return False
+    repo_ids = analysis.repo_ids == self.repo_ids
+    clauses = analysis.clauses == self.clauses
+    git = analysis.codeql_repo == self.codeql_repo
+    version = analysis.codeql_version == self.codeql_version
+    return repo_ids and clauses and git and version
 
   def prepare(self):
     q = Query()
@@ -47,29 +59,51 @@ class Analysis:
   def insert_self(self):
     q = Query()
     insertable_query = self.query.replace('\'', '\'\'')
-    sql = f"INSERT INTO analyses (repo_extraction_sql) VALUES ('{insertable_query}') RETURNING id"
+    columns = '(repo_extraction_sql, hash_of_codeql_repo, codeql_version)'
+    values = f"('{insertable_query}', '{self.get_codeql_repo_hash()}', '{self.get_codeql_version()}')"
+    sql = f"INSERT INTO analyses {columns} VALUES {values} RETURNING id"
     self.id = q.query(sql)[0][0]
     q.connection.con.commit()
+
+  def get_codeql_version(self):
+    command = Popen(
+      [
+        'codeql',
+        'version',
+        '--format=terse'
+      ],
+      stdout=PIPE
+    )
+    byte_hash = command.communicate()[0]
+    return byte_hash.decode('utf-8').strip()
+
+  def get_codeql_repo_hash(self):
+    cql_binary = shutil.which('codeql')
+    cql_home = os.path.dirname(os.path.dirname(cql_binary))
+    cql_repo = os.path.join(cql_home, 'codeql-repo')
+    command = Popen(
+      [
+        'git',
+        '-C',
+        cql_repo,
+        'rev-parse',
+        'HEAD'
+      ],
+      stdout=PIPE
+    )
+    byte_hash = command.communicate()[0]
+    return byte_hash.decode('utf-8').strip()
 
   def build_query(self):
     sql = 'SELECT id FROM repositories'
     if self.clauses['languages']:
       sql += f' {self.language_clause()}'
-      if self.clauses['topics']:
-        sql += ' AND'
-    if self.clauses['topics']:
-      sql += f' {self.topic_clause()}'
     self.query = sql
 
   def language_clause(self):
     sql_friendly_langauges = "', '".join(self.clauses['languages'])
     sql_friendly_langauges = f"('{sql_friendly_langauges}')"
     return f'WHERE programming_language IN {sql_friendly_langauges}'
-
-  def topic_clause(self):
-    sql_friendly_topics = '%|%'.join(self.clauses['topics'])
-    sql_friendly_topics = f"'%{sql_friendly_topics}%'"
-    return f'WHERE lower(topics) SIMILAR TO lower({sql_friendly_topics})'
 
   def analyze_repositories(self):
     if not self.prepared:
@@ -100,10 +134,11 @@ class Analysis:
     print(f'{self.timestamp()} Inserting {repo.name} vulnerabilities into database ...\n')
     if repo.insert_vulnerabilities(self.id):
       print('Insert successful')
-    else:
-      print(f'{self.timestamp()} Removing {repo.name} files ...\n')
       repo.mark_analysis_completed(self.id)
-      repo.cleanup()
+    else:
+      print(f'Insertion of {repo.name} vulnerabilities failed\n')
+    print(f'{self.timestamp()} Removing {repo.name} files ...\n')
+    repo.cleanup()
 
   def restart_analysis(self):
     q = Query()
