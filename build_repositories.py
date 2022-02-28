@@ -32,7 +32,7 @@ def write_repo_to_db(api, language, max_repos):
   pause_duration = 2
 
   # Create new error log
-  f = open('error_log.csv', 'w')
+  f = open('repo_error_log.csv', 'w')
   f.write('error_typ,repo_name,repo_id,time\n')
   f.close()
 
@@ -63,7 +63,7 @@ def write_repo_to_db(api, language, max_repos):
       log_error('already_exists', repo.name, repo.id)
     except Exception as ex:
       log_error(type(ex), repo.name, repo.id)
-    
+
     if success:
       print(f'Successfully wrote {repo.name} to database')
       count += 1
@@ -89,7 +89,7 @@ def log_error(error_type, repo_name, repo_id):
   f = open('error_log.csv', 'a')
   f.write(error_message)
   f.close()
-    
+
 def get_remaining_api_calls(api):
   return api.rate_limiting[0]
 

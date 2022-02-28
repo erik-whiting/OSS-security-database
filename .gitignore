@@ -3,7 +3,7 @@ env
 *.pyc
 ./__pycache__
 .tmp
-error_log.csv
+*error_log.csv
 
 cloned_repositories
 code_ql_databases

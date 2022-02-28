@@ -1,3 +1,4 @@
+import datetime
 import psycopg2
 import psycopg2.extras
 import os
@@ -19,7 +20,10 @@ class Query:
     self.cursor = self.connection.con.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
   def execute(self, sql):
-    self.cursor.execute(sql)
+    try:
+      self.cursor.execute(sql)
+    except Exception as e:
+      self.log_error(sql, e)
 
   def query(self, sql):
     self.execute(sql)
@@ -45,7 +49,10 @@ class Query:
   def command(self, sql):
     cursor = self.connection.con.cursor()
     cursor.execute(sql)
-    self.connection.con.commit()
+    try:
+      self.connection.con.commit()
+    except Exception as e:
+      self.log_error(sql, e)
 
   def insert(self, table, columns, values):
     column_string = f"({', '.join(columns)})"
@@ -63,3 +70,10 @@ class Query:
       new_value = f"{new_value}"
     query_string = f'UPDATE {table} SET {column} = {new_value} WHERE {where} = {matcher}'
     self.command(query_string)
+
+  def log_error(self, sql, exception=''):
+    print('Something went wrong, logging error')
+    now = datetime.datetime.now().strftime("%D %H:%M:%S")
+    f = open(f'db_error_log.csv', 'a')
+    f.write(f'{now}, {sql}, {exception}')
+    f.close()
