@@ -148,7 +148,7 @@ class Repository:
       for v in vulnerabilities:
         rv = RepoVulnerability(self, v)
         rv.insert(analysis_id)
-        return True
+      return True
     else:
       return False
 

@@ -54,6 +54,11 @@ class Analysis:
         except FileExistsError:
           print(f'./{directory}/{id} already exists')
 
+    # Create new error log
+    f = open(f'analysis_{self.id}_error_log.csv', 'w')
+    f.write('time_stamp, error')
+    f.close()
+
     self.prepared = True
 
   def insert_self(self):
@@ -137,6 +142,7 @@ class Analysis:
       repo.mark_analysis_completed(self.id)
     else:
       print(f'Insertion of {repo.name} vulnerabilities failed\n')
+      self.log_error(f'Insertion of {repo.name} vulnerabilities failed\n')
     print(f'{self.timestamp()} Removing {repo.name} files ...\n')
     repo.cleanup()
 
@@ -154,3 +160,8 @@ class Analysis:
     now = datetime.datetime.now()
     current_time = now.strftime("%D %H:%M:%S")
     return f'[{current_time}]'
+
+  def log_error(self, message):
+    f = open(f'analysis_{self.id}_error_log.csv', 'a')
+    f.write(f'{self.timestamp()}, {message}')
+    f.close()
