@@ -8,7 +8,6 @@ class Repository:
   def __init__(self, data):
     self.id = data['id']
     self.name = data['name']
-    self.latest_recorded_commit = data['latest_recorded_commit']
     self.html_url = data['html_url']
     self.clone_url = data['clone_url']
     self.ssh_url = data['ssh_url']
