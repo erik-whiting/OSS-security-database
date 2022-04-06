@@ -5,7 +5,6 @@ class RepoFactory:
   columns = [
     'id',
     'name',
-    'latest_recorded_commit',
     'html_url',
     'clone_url',
     'ssh_url',
@@ -36,12 +35,11 @@ class RepoFactory:
     values_dict = {
       'id': repo_rows[0],
       'name': repo_rows[1],
-      'latest_recorded_commit': repo_rows[2],
-      'html_url': repo_rows[3],
-      'clone_url': repo_rows[4],
-      'ssh_url': repo_rows[5],
-      'git_url': repo_rows[6],
-      'programming_language': repo_rows[7]
+      'html_url': repo_rows[2],
+      'clone_url': repo_rows[3],
+      'ssh_url': repo_rows[4],
+      'git_url': repo_rows[5],
+      'programming_language': repo_rows[6]
     }
     values_dict['topics'] = RepoFactory.get_topics_by_id(values_dict['id'])
     return values_dict
