@@ -60,9 +60,11 @@ def write_repo_to_db(api, language, max_repos):
     try:
       success = repo.write_to_database()
     except RepoAlreadyExists:
+      success = False
       log_error('already_exists', repo.name, repo.id)
     except Exception as ex:
-      log_error(type(ex), repo.name, repo.id)
+      success = False
+      log_error(ex, repo.name, repo.id)
 
     if success:
       print(f'Successfully wrote {repo.name} to database')
@@ -85,7 +87,7 @@ def sleep_until_rate_limit_resets(api):
   sleep(seconds_until_reset)
 
 def log_error(error_type, repo_name, repo_id):
-  error_message = f'{error_type},{repo_name},{repo_id},{time()}\n'
+  error_message = f'{error_type},{repo_name},{repo_id},{time()}\n\n'
   f = open('error_log.csv', 'a')
   f.write(error_message)
   f.close()
@@ -93,14 +95,9 @@ def log_error(error_type, repo_name, repo_id):
 def get_remaining_api_calls(api):
   return api.rate_limiting[0]
 
-languages_to_query = [
-  'ruby',
-  'javascript',
-  'typescript',
-  'python'
-]
+languages_to_query = ['javascript', 'typescript']
 
 api = Github(gh_user, gh_token)
-repos_per_language = 1000
+repos_per_language = 500
 for language in languages_to_query:
   write_repo_to_db(api, language, repos_per_language)
