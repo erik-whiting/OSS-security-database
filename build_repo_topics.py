@@ -27,7 +27,7 @@ del(rows)
 #       longest_topic = topic
 
 # print(f'Longest topic is {longest_topic}, its length is {longest_topic_length}')
-# Longest length is 35
+# Longest length was 33 as of 4/3/2022
 
 for key in repo_topic_dict:
   for topic in repo_topic_dict[key]:
