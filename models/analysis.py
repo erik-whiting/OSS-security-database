@@ -50,9 +50,9 @@ class Analysis:
     for repo_id in self.repo_ids:
       for directory in directories:
         try:
-          os.mkdir(f'./{directory}/{id}')
+          os.mkdir(f'./{directory}/{repo_id}')
         except FileExistsError:
-          print(f'./{directory}/{id} already exists')
+          print(f'./{directory}/{repo_id} already exists')
 
     # Create new error log
     f = open(f'analysis_{self.id}_error_log.csv', 'w')

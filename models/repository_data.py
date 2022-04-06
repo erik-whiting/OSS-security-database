@@ -14,7 +14,6 @@ class RepositoryData:
     self.id = repo_object.id
     self.name = repo_object.name
     self.description = repo_object.description
-    self.latest_recorded_commit = repo_object.get_commits()[0].sha
     self.html_url = repo_object.html_url
     self.clone_url = repo_object.clone_url
     self.ssh_url = repo_object.ssh_url
@@ -26,14 +25,13 @@ class RepositoryData:
     self.issues = repo_object.open_issues_count
     self.programming_language = programming_language
     self.created = repo_object.created_at
-  
+
   @staticmethod
   def column_list():
     return [
       'id',
       'name',
       'description',
-      'latest_recorded_commit',
       'html_url',
       'clone_url',
       'ssh_url',
@@ -52,7 +50,6 @@ class RepositoryData:
       self.id,
       self.name,
       self.description,
-      self.latest_recorded_commit,
       self.html_url,
       self.clone_url,
       self.ssh_url,
@@ -65,7 +62,7 @@ class RepositoryData:
       self.programming_language,
       self.created
     ]
-  
+
   def values_dict(self):
     vdict = {}
     index = 0
@@ -73,12 +70,11 @@ class RepositoryData:
       vdict[value] = self.values_list()[index]
       index += 1
     return vdict
-  
+
   def sql_friendly_insert_values(self):
     db_string_columns = [
       'name',
       'description',
-      'latest_recorded_commit',
       'html_url',
       'clone_url',
       'ssh_url',
@@ -108,7 +104,7 @@ class RepositoryData:
       return value.replace('\'', '\'\'')
     else:
       return value
-  
+
   def sql_friendly_values(self):
     return ', '.join(self.sql_friendly_insert_values())
 
