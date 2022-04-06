@@ -142,7 +142,7 @@ class Analysis:
       repo.mark_analysis_completed(self.id)
     else:
       print(f'Insertion of {repo.name} vulnerabilities failed\n')
-      self.log_error(f'Insertion of {repo.name} (ID: {repo.id}) vulnerabilities failed\n')
+      self.log_error(f'Insertion of {repo.name} vulnerabilities failed\n')
     print(f'{self.timestamp()} Removing {repo.name} files ...\n')
     repo.cleanup()
 
