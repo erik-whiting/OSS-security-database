@@ -56,7 +56,7 @@ class Analysis:
 
     # Create new error log
     f = open(f'analysis_{self.id}_error_log.csv', 'w')
-    f.write('time_stamp, error')
+    f.write('time_stamp, error\n')
     f.close()
 
     self.prepared = True
