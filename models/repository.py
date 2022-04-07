@@ -41,6 +41,19 @@ class Repository:
       self.mkdir(dir)
     os.system(self.git_clone_string(from_url))
 
+  def checkout_commit(self, commit_hash):
+    command = Popen(
+      [
+        'git',
+        '-C',
+        self.source_root(),
+        'checkout',
+        commit_hash
+      ],
+      stdout=PIPE
+    )
+    command.communicate()
+
   def cleanup(self):
     # Since the system is going to evaluate
     # thousands of repositories, it's a good
