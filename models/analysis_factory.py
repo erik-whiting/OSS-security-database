@@ -38,7 +38,7 @@ class AnalysisFactory:
     q = Query()
     analysis_row = q.get(
       'analyses',
-      column=id,
+      column='id',
       value=id
     )
 
