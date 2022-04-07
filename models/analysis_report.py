@@ -15,6 +15,7 @@ class AnalysisReport:
   def __init__(self, analysis_id):
     self.analysis = AnalysisFactory.find(analysis_id)
     self.data = self.get_report_data()
+    self.unanalyzed_repos = self.analysis.get_unanalyzed_ids()
     self.vulnerability_data = self.vulnerabilities_found()
     self.summary = self.summarize_data()
 
@@ -24,9 +25,10 @@ class AnalysisReport:
     # Compare Analysis values
     analysis = self.analysis == report.analysis
     data = report.data == self.data
+    unalnalyzed = report.unanalyzed_repos == self.unanalyzed_repos
     vulnerabilities = report.vulnerability_data == self.vulnerability_data
     summary = report.summary == self.summary
-    return analysis and data and vulnerabilities and summary
+    return analysis and data and unalnalyzed and vulnerabilities and summary
 
   def save_analysis_report(self, filename_addition=''):
     date_string = datetime.now().strftime('%d-%m-%y')
@@ -61,7 +63,10 @@ class AnalysisReport:
     summary_data = {
       'repos_queried': repos_in_report,
       'repos_analyzed': completed_repos,
-      'missed_repos': repos_in_report - completed_repos
+      'missed_repos': repos_in_report - completed_repos,
+      'query': self.analysis.query,
+      'codeql_version': self.analysis.codeql_version,
+      'codeql_repo': self.analysis.codeql_repo
     }
     return summary_data
 
