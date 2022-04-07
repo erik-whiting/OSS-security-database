@@ -8,6 +8,7 @@ class Analysis:
   def __init__(self, languages=[]):
     self.id = None
     self.repo_ids = []
+    self.unanalyzed_ids = []
     self.prepared = False
     self.clauses = {
       'languages': languages if type(languages) == list else [languages]
@@ -145,6 +146,14 @@ class Analysis:
       self.log_error(f'Insertion of {repo.name} vulnerabilities failed\n')
     print(f'{self.timestamp()} Removing {repo.name} files ...\n')
     repo.cleanup()
+
+  def get_unanalyzed_ids(self):
+    q = Query()
+    sql = f'SELECT repository_id FROM analysis_repo WHERE NOT completed AND analysis_id = {self.id}'
+    repo_ids = q.query(sql)
+    # Flatten list
+    ids = [r for repo_id in repo_ids for r in repo_id]
+    return ids
 
   def restart_analysis(self):
     q = Query()
