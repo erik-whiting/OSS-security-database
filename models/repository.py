@@ -16,22 +16,13 @@ class Repository:
     self.language = data['programming_language']
     self.ram_setting = 1000 * 12
 
-  def git_clone_string(self, from_url=None, shallow=True):
+  def git_clone_string(self, from_url=None):
     url = self.clone_url
     if from_url == 'ssh':
       url = self.ssh_url
     elif from_url == 'git':
       url = self.git_url
     string = f'git clone {url} ./cloned_repositories/{self.id}/{self.name}'
-    if shallow:
-      # Do a shallow clone unless the analysis is a reproduction
-      # Shallow cloning at a depth of 1 means we don't clone any
-      # of the history besides the latest commit; which saves us
-      # some time in the cloning process. If we're reproducing
-      # an analysis though, we need the commit history so we can
-      # checkout the commit that existed when the original analysis
-      # was conducted.
-      string += ' --depth 1'
     return string
 
   def mkdir(self, dir):
@@ -45,10 +36,10 @@ class Repository:
       f'./{base}/{self.id}/{self.name}'
     ]
 
-  def clone(self, from_url=None, shallow=True):
+  def clone(self, from_url=None):
     for dir in self.directory_path_for('cloned_repositories'):
       self.mkdir(dir)
-    os.system(self.git_clone_string(from_url=from_url, shallow=shallow))
+    os.system(self.git_clone_string(from_url=from_url))
 
   def checkout_commit(self, commit_hash):
     command = Popen(
