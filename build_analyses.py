@@ -5,11 +5,10 @@ languages_to_query = [
 ]
 
 # analysis = Analysis(languages=languages_to_query)
-# analysis.prepare()
 # analysis.analyze_repositories()
 
 # 17
 analysis = Analysis(languages=languages_to_query)
 analysis.id = 17
-analysis.prepared = True
+analysis.prepare()
 analysis.restart_analysis()
